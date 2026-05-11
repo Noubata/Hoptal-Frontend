@@ -254,14 +254,22 @@ export default function DossierPatient() {
                   </thead>
                   <tbody>
                     {releves.map((item, index) => (
-                      <tr key={index} style={{ borderBottom: '1px solid #F3F4F6' }}>
-                        <td style={{ padding: '14px 12px', color: '#111827' }}>{item.date || item.createdAt || '—'}</td>
-                        <td style={{ padding: '14px 12px', color: '#111827' }}>{item.doctorNom || item.doctor?.nom || '—'}</td>
-                        <td style={{ padding: '14px 12px', color: '#111827' }}>{item.diagnostic || '—'}</td>
-                        <td style={{ padding: '14px 12px', color: '#111827' }}>{item.typeVisite || '—'}</td>
-                        <td style={{ padding: '14px 12px', color: '#111827' }}>{item.dureeConsultation ? `${item.dureeConsultation} min` : '—'}</td>
-                      </tr>
-                    ))}
+  <tr key={index} style={{ borderBottom: '1px solid #F3F4F6' }}>
+    <td style={{ padding: '10px 12px', fontSize: 13, fontFamily: "'DM Mono',monospace", color: '#6B7280' }}>
+      {item.dateDeVisite
+        ? new Date(item.dateDeVisite).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+        : '—'}
+    </td>
+    <td style={{ padding: '10px 12px', fontSize: 13, fontWeight: 600, color: '#111827' }}>
+      Dr. {item.doctorNom} {item.doctorPrenom}
+    </td>
+    <td style={{ padding: '10px 12px', fontSize: 13, color: '#374151' }}>{item.diagnostic || '—'}</td>
+    <td style={{ padding: '10px 12px', fontSize: 13, color: '#374151' }}>{item.typeVisite || '—'}</td>
+    <td style={{ padding: '10px 12px', fontSize: 13, color: '#374151' }}>
+      {item.dureeConsultation ? `${item.dureeConsultation} min` : '—'}
+    </td>
+  </tr>
+))}
                   </tbody>
                 </table>
               </div>

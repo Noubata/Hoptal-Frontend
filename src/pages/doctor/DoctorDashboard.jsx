@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { getDoctorByNomUtilisateur } from '../../api/doctorApi.js';
 import { getDoctorPatients } from '../../api/releveApi.js';
+import api from '../../api/axios.js';
 
 const bloodTypeLabel = {
   A_POSITIF: 'A+',
@@ -21,6 +22,7 @@ export default function DoctorDashboard() {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [consultationsAujourdhui, setConsultationsAujourdhui] = useState(0);
 
   useEffect(() => {
   async function loadData() {
@@ -28,17 +30,35 @@ export default function DoctorDashboard() {
     setError('');
     try {
       const token = localStorage.getItem('hoptal_token');
-      if (!token) { setError('Token manquant.'); return; }
+      if (!token) { 
+        setError('Token manquant.'); 
+        return; 
+      }
+      
       const decoded = JSON.parse(atob(token.split('.')[1]));
-      const username = decoded.sub; // 'dr.ali'
+      const username = decoded.sub;
 
       const connectedDoctor = await getDoctorByNomUtilisateur(username);
-      if (!connectedDoctor) { setError('Compte médecin introuvable.'); return; }
-
+      if (!connectedDoctor) { 
+        setError('Compte médecin introuvable.'); 
+        return; 
+      }
       setDoctor(connectedDoctor);
+
+      // --- NEW LOGIC ADDED HERE ---
+      try {
+        const consultRes = await api.get('/api/releves/aujourd-hui/count');
+        const count = consultRes.data?.data ?? 0;
+        setConsultationsAujourdhui(count);
+      } catch (err) {
+        // If the specific count fetch fails, we default to 0 rather than crashing the whole dashboard
+        setConsultationsAujourdhui(0);
+      }
+
       const patientsResponse = await getDoctorPatients(connectedDoctor.id);
       const patientsData = patientsResponse.data?.data ?? patientsResponse.data ?? [];
       setPatients(Array.isArray(patientsData) ? patientsData : []);
+      
     } catch (err) {
       console.error('Erreur DoctorDashboard:', err);
       setError('Impossible de charger le tableau de bord.');
@@ -47,7 +67,7 @@ export default function DoctorDashboard() {
     }
   }
   loadData();
-}, []); // ← tableau vide — plus de dépendance sur nomUtilisateur
+}, []);
 
   const recentPatients = useMemo(() => [...patients].slice(0, 5), [patients]);
 
@@ -74,7 +94,7 @@ export default function DoctorDashboard() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
             <span style={{ fontSize: 24 }}>📋</span>
             <div>
-              <div style={{ fontSize: 40, fontFamily: 'Fraunces, serif', fontWeight: 800, color: '#1B6B45' }}>0</div>
+              <div style={{ fontSize: 40, fontFamily: 'Fraunces, serif', fontWeight: 800, color: '#1B6B45' }}>{consultationsAujourdhui}</div>
               <div style={{ fontSize: 13, color: '#6B7280' }}>Consultations aujourd'hui</div>
             </div>
           </div>

@@ -53,7 +53,7 @@ export default function NouveauPatient() {
     setErrors([]);
 
     try {
-      const body = { ...form, hopitalId: 2 };
+      const body = { ...form, hopitalId: 3 };
       const response = await creerPatient(body);
       const patient = response.data?.data ?? response.data;
 

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getRecentPatients, searchPatients } from '../../api/patientApi.js';
 import { searchDoctors } from '../../api/doctorApi.js';
 import { getLaborantins } from '../../api/laborantinApi.js';
+import api from '../../api/axios.js';
 import './AdminDashboard.css';
 
 export default function AdminDashboard() {
@@ -13,54 +14,51 @@ export default function AdminDashboard() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-  async function loadData() {
-    setLoading(true);
-    setError(''); // On réinitialise l'erreur globale
-    
-    try {
-      // 1. On lance tout en parallèle. 
-      // Si l'un échoue, on veut quand même les autres.
-      const [patientsRes, doctorsRes, laborantinsRes, recentRes] = await Promise.allSettled([
-        searchPatients(),
-        searchDoctors(''),
-        getLaborantins(),
-        getRecentPatients() // Ta nouvelle fonction
-      ]);
+    async function loadData() {
+      setLoading(true);
+      setError('');
+      
+      try {
+        const [patientsRes, doctorsRes, laborantinsRes, recentRes] = await Promise.allSettled([
+          searchPatients(),
+          searchDoctors(''),
+          getLaborantins(),
+          getRecentPatients()
+        ]);
 
-      // 2. Gestion des Stats (on vérifie si la promesse est "fulfilled")
-      const allPatients = patientsRes.status === 'fulfilled' ? (patientsRes.value.data?.data ?? patientsRes.value.data ?? []) : [];
-      const docs = doctorsRes.status === 'fulfilled' ? (doctorsRes.value.data?.data ?? doctorsRes.value.data ?? []) : [];
-      const labs = laborantinsRes.status === 'fulfilled' ? (laborantinsRes.value.data?.data ?? laborantinsRes.value.data ?? []) : [];
+        const allPatients = patientsRes.status === 'fulfilled' ? (patientsRes.value.data?.data ?? patientsRes.value.data ?? []) : [];
+        const docs = doctorsRes.status === 'fulfilled' ? (doctorsRes.value.data?.data ?? doctorsRes.value.data ?? []) : [];
+        const labs = laborantinsRes.status === 'fulfilled' ? (laborantinsRes.value.data?.data ?? laborantinsRes.value.data ?? []) : [];
+        const consultRes = await api.get('/api/releves/aujourd-hui/count');
+        const consultCount = consultRes.data?.data ?? 0;
+        setStats(prev => ({ ...prev, consultations: consultCount }));
 
-      setStats({
-        patients: allPatients.length,
-        doctors: docs.length,
-        laborantins: labs.length,
-        consultations: 0
-      });
+        setStats({
+          patients: allPatients.length,
+          doctors: docs.length,
+          laborantins: labs.length,
+          consultations: 0
+        });
 
-      // 3. Gestion spécifique de la liste "Derniers Patients"
-      if (recentRes.status === 'fulfilled') {
-        const recentData = recentRes.value.data?.data ?? recentRes.value.data ?? [];
-        setPatients(Array.isArray(recentData) ? recentData : []);
-      } else {
-        // C'est ici que ça coince dans ton screenshot !
-        console.error("Erreur spécifique getRecentPatients:", recentRes.reason);
-        setError('Impossible de charger la liste des derniers patients.');
+        if (recentRes.status === 'fulfilled') {
+          const recentData = recentRes.value.data?.data ?? recentRes.value.data ?? [];
+          setPatients(Array.isArray(recentData) ? recentData : []);
+        } else {
+          console.error("Erreur spécifique getRecentPatients:", recentRes.reason);
+          setError('Impossible de charger la liste des derniers patients.');
+        }
+
+      } catch (err) {
+        console.error('Erreur critique dashboard:', err);
+        setError('Une erreur critique est survenue.');
+      } finally {
+        setLoading(false);
       }
-
-    } catch (err) {
-      console.error('Erreur critique dashboard:', err);
-      setError('Une erreur critique est survenue.');
-    } finally {
-      setLoading(false);
     }
-  }
 
   loadData();
 }, []);
   const latestPatients = useMemo(() => [...patients].reverse().slice(0, 5), [patients]);
-
   return (
     <div className="dashboard-page">
       <section className="stats-grid">
@@ -137,7 +135,7 @@ export default function AdminDashboard() {
                 </thead>
                 <tbody>
                   {latestPatients.map((p) => (
-                    <tr key={p.id || p.numeroDossier || p.nomUtilisateur} onClick={() => navigate('/admin/patients')}>
+                    <tr key={p.id || p.numeroDossier || p.nomUtilisateur} onClick={() => navigate(`/admin/patients/${p.id}`)} style={{ cursor: 'pointer' }}>
                       <td className="mono">{p.numeroDossier || p.id || 'DPI-XXXX'}</td>
                       <td className="name">{`${p.nom || ''} ${p.prenom || ''}`.trim()}</td>
                       <td className="phone">{p.telephone || p.phone || '-'}</td>

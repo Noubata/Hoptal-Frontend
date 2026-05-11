@@ -2,7 +2,7 @@
 import api from './axios.js';
 
 export function creerPatient(body) {
-  return api.post('/api/patients/creer', body);
+  return api.post('/api/patients/creerPatient', body);
 }
 
 export function getAllPatients() {
