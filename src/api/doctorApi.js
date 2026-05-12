@@ -29,5 +29,4 @@ export async function getDoctorByNomUtilisateur(nomUtilisateur) {
   return Array.isArray(doctors)
     ? doctors.find(d => d.nomUtilisateur === nomUtilisateur) ?? null
     : null;
-  // ← retourne directement l'objet doctor, pas une response Axios
 }
